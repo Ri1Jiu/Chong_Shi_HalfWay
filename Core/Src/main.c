@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -26,7 +27,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include<string.h>
+#include <string.h>
+#include "oled.h"
+#include "EX_oled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +50,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,34 +94,60 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM3_Init();
   MX_I2C1_Init();
-  MX_USART1_UART_Init();
+  MX_ADC1_Init();
+  MX_I2C2_Init();
+  MX_TIM2_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
-HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
-HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
+  HAL_Delay(20);
+  OLED_Init();
 
+  // char message[50] = "";
+
+
+
+
+//---------------------{ [ 这个世界上被遗弃的EXIT键 ] }----------------------------------------
+  // HAL_GPIO_EXTI_Callback(EXIT_Pin);
+  // {
+  //   i = 1;
+  //   OLED_NewFrame();
+  //   OLED_Frame_1(&i);
+  //   OLED_ShowFrame();
+//-----------中断无需也无法判断按下情况
+    // if(HAL_GPIO_ReadPin(EXIT_GPIO_Port,EXIT_Pin))
+    // {
+    //   HAL_Delay(20);
+    //   if(HAL_GPIO_ReadPin(EXIT_GPIO_Port,EXIT_Pin))
+    //   {
+    //     OLED_Frame_1 ();
+    //   }
+    // }
+  // }
+
+    OLED_PreFrame();
+    OLED_Frame_1 (&i);
+    int returnning = 0;
+    // int* i1 = &i;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
-    __HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_3,0);
-    __HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_2,50);
-    for(int i = 0 ; i < 100 ; i++)
+  { 
+
+    if(tick_elapsed (&returnning , 20))
     {
-      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
-      HAL_Delay(10);
+    READPin(&i);
+    READPinPin(&i);
     }
+    
+    
+    // HAL_GPIO_WritePin(KEY1_GPIO_Port,KEY1_Pin,1);
 
-    __HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_2,0);
 
 
-    for(int i = 100 ; i >= 0 ; i--)
-    {
-      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
-      HAL_Delay(10);
-    }
+
 
     /* USER CODE END WHILE */
 
@@ -136,6 +164,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -162,6 +191,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
