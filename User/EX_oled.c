@@ -14,12 +14,38 @@
     int j = 0;
     int state = 1;
     int STaTe = 0;
+    int STATE = 0;
     typedef void (* FUN)(int * idx);
 
 
 //---------------------{ALL级菜单 按键}----------------------------------
 //在不同标签页下保持功能
-FUN Frame[3] = { OLED_Frame_1 , OLED_Frame_1_1 ,OLED_Frame_1_2};
+FUN Frame[5] = { OLED_Frame_1 , OLED_Frame_1_1 , OLED_Frame_1_2, OLED_Frame_1_3, OLED_Frame_1_4};
+
+
+//-----------------{函数调用 二维数组}---------------------------
+
+
+//---------------------{一级菜单(函数) }---------------------------------
+FUN * function[4] = { Light, UART ,Encoder , TIM };
+FUN Light[2] = { PWM_Light , Encoder_Light  };
+FUN UART[3] = { UART_OLED_Transmit , UART_show , UART_Review };
+FUN Encoder[2] = { Encoder_ };
+FUN TIM[4] = { TIM_UP_Count , TIM_DOWN_Count };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -127,8 +153,8 @@ char menu1[4][15] =
 {
     "Light",
     "UART",
-    "Encoder Light",
-    "angle",
+    "Encoder",
+    "TIM",
 };
 //---------------------{二级 一号 菜单    数组}----------------------------------
 //二级 一号 菜单设置的数组
@@ -140,17 +166,27 @@ char menu1_1[3][20] =
 };
 //---------------------{二级 二号 菜单    数组}----------------------------------
 //二级 二号 菜单设置的数组
-char menu1_2[2][20] = 
+char menu1_2[3][20] = 
 {
     "UART_OLED_Transmit",
-    "UART_",
+    "UART_show",
+    "UART_Review",
 };
-
-//-----------------{函数调用 二维数组}---------------------------
-
-//---------------------{一级菜单(函数) }---------------------------------
-FUN * function[4] = { Light, UART  };
-
+//---------------------{二级 三号 菜单    数组}----------------------------------
+//二级 三号 菜单设置的数组
+char menu1_3[2][20] = 
+{
+    "Encoder",
+    " ",
+};
+//---------------------{二级 四号 菜单    数组}----------------------------------
+//二级 四号 菜单设置的数组
+char menu1_4[3][20] = 
+{
+    "TIM_UP_Count",
+    "TIM_DOWN_Count",
+    "",
+};
 
 
 
@@ -176,7 +212,6 @@ void OLED_Frame_1 (int * i)
 }
 
 //---------------------{二级 一号 菜单}----------------------------------
-FUN Light[2] = { PWM_Light , Encoder_Light  };
 void OLED_Frame_1_1 (int * i)
 {
     OLED_NewFrame();
@@ -189,14 +224,37 @@ void OLED_Frame_1_1 (int * i)
 }
 
 // ---------------------{二级 二号 菜单}----------------------------------
-FUN UART[2] = { UART_OLED_Transmit };
 void OLED_Frame_1_2 (int * i)
 {
     OLED_NewFrame();
 
     OLED_PrintString(4 , 0 , menu1_2[0] , &font16x16, OLED_COLOR_NORMAL);
     OLED_PrintString(4 , 16,  menu1_2[1] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_DrawRoundRectangle(4 - 1, *i * 16, strlen(menu1_1[*i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, *i * 16, strlen(menu1_2[*i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
+
+// ---------------------{二级 三号 菜单}----------------------------------
+void OLED_Frame_1_3 (int * i)
+{
+    OLED_NewFrame();
+
+    OLED_PrintString(4 , 0 , menu1_3[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_3[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, *i * 16, strlen(menu1_3[*i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
+
+// ---------------------{二级 四号 菜单}----------------------------------
+void OLED_Frame_1_4 (int * i)
+{
+    OLED_NewFrame();
+
+    OLED_PrintString(4 , 0 , menu1_4[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_4[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, *i * 16, strlen(menu1_4[*i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
 
     OLED_ShowFrame();
 }
@@ -254,8 +312,43 @@ void UART_Light()
 }
 
 
+//---------------------{二级 二号菜单实现预备}----------------------------------------
 void UART_OLED_Transmit()
 {
+
+
+
+
+
+}
+
+
+void UART_show()
+{
+
+
+
+
+
+}
+
+
+void UART_Review ()
+{
+
+
+
+
+}
+
+
+//---------------------{二级 三号菜单实现预备}----------------------------------------
+
+void Encoder_ ()
+{
+
+
+
 
 
 
@@ -267,6 +360,29 @@ void UART_OLED_Transmit()
 
 
 
+
+//---------------------{二级四号菜单实现预备}----------------------------------------
+
+void TIM_UP_Count ()
+{
+
+
+
+
+
+}
+
+
+void TIM_DOWN_Count ()
+{
+
+
+
+
+
+
+
+}
 
 
 
