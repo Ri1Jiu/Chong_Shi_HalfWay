@@ -109,8 +109,10 @@ int READPin_PWM()
             
          }
          else if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
-         {
-            if(tick_elapsed(&doen_count , 100))
+         { 
+            doen_count = HAL_GetTick();
+            while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
+            if(HAL_GetTick() - doen_count <= 100)
             {
                 s_PWM = 1;
             }
@@ -119,7 +121,6 @@ int READPin_PWM()
                 s_PWM = 2;
             }
          }
-         while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
          return 1;   
     }
         return 0;
@@ -202,7 +203,8 @@ void READPinPin_4_1()
     volatile int OLED_ready = 0;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    int compare = 100 ;
+    int compare = 0 ;
+    
     if( DMA_CH == 13)//UL --》UART_Light
     {
         if(UL[1] == '1')
@@ -365,10 +367,17 @@ void OLED_Frame_1 ()
         {
             if(READPin())
             {
-                i++;       //
-                Frame[s_page]();
+            i++;       //
+            Frame[s_page]();
             }
         }
+
+        // if(to_exit == 1)
+        // {
+        //     i++;       //
+        //     to_exit =  0;
+        //     Frame[s_page]();
+        // }
 
         if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
         {
@@ -394,7 +403,7 @@ void OLED_Frame_1 ()
             {
                 char miss1[30] = "NEVER   SAY";
                 char miss2[30] = "GOODBOY";
-                // to_exit  = 1;
+                
                 OLED_NewFrame();
                 OLED_PrintString(18 ,10,miss1 ,&font16x16 ,OLED_COLOR_NORMAL );
                 OLED_PrintString(28 ,28,miss2 ,&font16x16 ,OLED_COLOR_NORMAL );
@@ -641,20 +650,24 @@ void PWM_Light()
     HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
 
+    OLED_NewFrame();
+    OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
+    OLED_ShowFrame();
+
 //------------------------ !! ! 非阻塞改进版 ! !! -------------------------------------------
     // __HAL_TIM_SET_COMPARE(&htim3,TIM[j],0);
     while(1)
     {
-        if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
+        if(PWM_Light_state == 0  && tick_elapsed(&PWM_Light_Time , 10))
         { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
-        else if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 1)
+        else if( PWM_Light_state == 1 && tick_elapsed(&PWM_Light_Time , 10))
         { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
         }
         
@@ -699,11 +712,11 @@ void PWM_Light()
             {
                 if(*s_LED[ii])
                 {
-                HAL_TIM_PWM_Stop(&htim3 ,PWM_Light_CH[s1_place]);
+                HAL_TIM_PWM_Stop(&htim3 ,PWM_Light_CH[ii]);
                 }
                 else
                 {
-                HAL_TIM_PWM_Start(&htim3 ,PWM_Light_CH[s1_place]);
+                HAL_TIM_PWM_Start(&htim3 ,PWM_Light_CH[ii]);
                 }
 
             }
@@ -713,14 +726,14 @@ void PWM_Light()
             {
         if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
         { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
         else if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 1)
         { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
         }
 
@@ -754,7 +767,8 @@ void PWM_Light()
 
         if(s_PWM == 4)
         {
-            s2_idx_place = (s2_place - 1) % 3;
+            s2_place -= 1;
+            s2_idx_place = (s2_place ) % 3;
             *s_LED[s2_idx_place]  = (*s_LED[s2_idx_place] + 1) % 2;
 
             for(int ii = 0; ii < 3 ; ii++)
@@ -774,14 +788,14 @@ void PWM_Light()
             {
         if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
         { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
         else if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 1)
         { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, TIM[PWM_Light_Choose], PWM_Light_Lig);
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
           if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
         }
 
@@ -815,21 +829,119 @@ void PWM_Light()
 
         if(s_PWM == 2)
         {
-
-            
+            // int  PWM_Light_count = 0;
             s_PWM = 0;
+            while(1)
+            {int lalssladl = 0;
+                if(lalssladl == 1)
+                {
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 0);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 90);
+                }
+                                if(lalssladl == 1)
+                {
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 0);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 90);
+                }
+                
+                else if(lalssladl == 1)
+                {
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 0);
+                }
+
+                if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+        {
+            if(READPin_PWM())
+            {
+                break;
+            }
+        }
+
+        if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
+        {
+            if(READPinPin_PWM())
+            {
+                break;
+                //i = 0;     已有
+            }
+        }
+
+        if( tick_elapsed(&key_Exittime , (uint32_t) 20) )
+        {
+            if(EXIT())
+            {   
+                Frame[s_page]();
+            }
+        }
+            }
+
         }
 
         if(s_PWM == 3)
         {
+
+            // int  PWM_Light_count = 0;
             s_PWM = 0;
+            while(1)
+            {
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 90);
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 90);
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 90);
+
+        HAL_Delay(21);
+
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 0);
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 0);
+        __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 0);    
+        
+        HAL_Delay(21);
+        if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+        {
+            if(READPin_PWM())
+            {
+                break;
+            }
         }
+
+        if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
+        {
+            if(READPinPin_PWM())
+            {
+                break;
+                //i = 0;     已有
+            }
+        }
+
+        if( tick_elapsed(&key_Exittime , (uint32_t) 20) )
+        {
+            if(EXIT())
+            {   
+                Frame[s_page]();
+            }
+        }
+            }
+        }
+        
+        if( tick_elapsed(& key_Exittime, (uint32_t) 24) )
+        {
+            if(EXIT())
+            {
+            Frame[s_page]();
+            }
+        }
+
     }
 }
 
 void Encoder_Light()
 {
     uint32_t Encoder_Light_count = 0;
+    uint32_t Encoder_Light_count_aaa = 0;
+    uint32_t Encoder_Light_count_bbb = 0;
     uint32_t Encoder_Light_Time = 0;
     key_Exittime = 0;
     HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
@@ -839,7 +951,6 @@ void Encoder_Light()
 
 
     OLED_NewFrame();
-
     OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
     OLED_ShowFrame();
     HAL_Delay(300);
@@ -851,7 +962,7 @@ void Encoder_Light()
     {
         if( tick_elapsed(& Encoder_Light_Time, (uint32_t) 20) )
         {
-        int  Encoder_Light_count = __HAL_TIM_GET_COUNTER(&htim2);
+        Encoder_Light_count = __HAL_TIM_GET_COUNTER(&htim2);
         if( Encoder_Light_count > 60000) 
         {
             Encoder_Light_count = 0;
@@ -867,7 +978,25 @@ void Encoder_Light()
         __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 50 - Encoder_Light_count);
         __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , Encoder_Light_count);
         }
+        if(Encoder_Light_count > 25)
+        {
+            Encoder_Light_count_aaa = 25;
+            Encoder_Light_count_bbb = Encoder_Light_count - 25;
+        } 
+        else
+        {
+            Encoder_Light_count_aaa = Encoder_Light_count;
+            Encoder_Light_count_bbb = 0;
+        }
 
+        OLED_NewFrame();
+        OLED_DrawRectangle      (  30 - 24 , 40 , 25 , 10,OLED_COLOR_NORMAL);
+        OLED_DrawRectangle      (  30 + 63 , 40 , 25 , 10,OLED_COLOR_NORMAL);
+        OLED_DrawFilledRectangle(  30 - 24 , 40 , Encoder_Light_count_aaa ,10 , OLED_COLOR_NORMAL);
+        OLED_DrawFilledRectangle(  30 + 63 , 40 , Encoder_Light_count_bbb ,10 , OLED_COLOR_NORMAL);
+        OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
+        
+        OLED_ShowFrame();
 
         if( tick_elapsed(& key_Exittime, (uint32_t) 24) )
         {
