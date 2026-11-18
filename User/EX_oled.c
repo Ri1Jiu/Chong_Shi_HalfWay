@@ -29,7 +29,7 @@
 
 FUN Light[3] = { PWM_Light , Encoder_Light ,UART_Light};
 FUN UART[3] = { UART_OLED , OLED_UART , UART_Review };
-FUN Encoder[1] = { Encoder_1 };
+FUN Encoder[2] = { Encoder_Slaver ,ADC };
 FUN TIM[3] = { TIM_UP_Count , TIM_DOWN_Count , TIM_Slavor };
 FUN * function[4] = { Light, UART ,Encoder , TIM };
 
@@ -45,13 +45,13 @@ FUN Frame[5] = { OLED_Frame_1 , OLED_Frame_1_1 , OLED_Frame_1_2, OLED_Frame_1_3,
 int READPin()       // 读取KEY按下情况,进行页面切换
 {
     
-    if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+    if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
     {
         HAL_Delay(30);
-         if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+         if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
          {
          }
-         while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
+         while(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
          return 1;   
     }
         return 0;
@@ -61,14 +61,14 @@ int READPin()       // 读取KEY按下情况,进行页面切换
 //---------------------{二级菜单实现 (选中函数) }---------------------------------
 int  READPinPin()
 {
-    if(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+    if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
     {
         HAL_Delay(20);
-        if(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+        if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
         {
 
         }
-        while(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin)){}
+        while(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin)){}
         return 1 ;
     }
         return 0 ;
@@ -78,13 +78,13 @@ int  READPinPin()
 //-----------------{函数调用 二维数组}---------------------------
 int EXIT ()
 { 
-        if(!HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin))
+        if(HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin))
     {
         HAL_Delay(20);
-        if(!HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin))
+        if(HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin))
         {
         
-        while(!HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin)){}
+        while(HAL_GPIO_ReadPin(KEY3_GPIO_Port,KEY3_Pin)){}
         return 1 ;
         }
     }
@@ -324,7 +324,8 @@ char menu1_2[4][20] =
 //二级 三号 菜单设置的数组
 char menu1_3[4][20] = 
 {
-    "Encoder",
+    "Encoder_Slaver",
+    "ADC",
 };
 //---------------------{二级 四号 菜单    数组}----------------------------------
 //二级 四号 菜单设置的数组
@@ -529,7 +530,7 @@ void OLED_Frame_1_3 ()
     OLED_NewFrame();
     i %= 1;
     OLED_PrintString(4 , 0 , menu1_3[0] , &font16x16, OLED_COLOR_NORMAL);
-    // OLED_PrintString(4 , 16,  menu1_3[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_3[1] , &font16x16, OLED_COLOR_NORMAL);
 
     OLED_DrawRoundRectangle(4 - 1, i * 16, strlen(menu1_3[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
 
@@ -784,7 +785,7 @@ void PWM_Light()
 
             }
             s_PWM = 0;
-                        while(1)
+            while(1)
             {
         if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
         { PWM_Light_Lig --;
@@ -943,6 +944,8 @@ void Encoder_Light()
     uint32_t Encoder_Light_count_aaa = 0;
     uint32_t Encoder_Light_count_bbb = 0;
     uint32_t Encoder_Light_Time = 0;
+    uint32_t Encoder_Light_Refresh_idx = 0;
+    uint32_t Encoder_Light_Refresh_Time = 0;
     key_Exittime = 0;
     HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
     HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
@@ -963,6 +966,10 @@ void Encoder_Light()
         if( tick_elapsed(& Encoder_Light_Time, (uint32_t) 20) )
         {
         Encoder_Light_count = __HAL_TIM_GET_COUNTER(&htim2);
+        if(Encoder_Light_count != __HAL_TIM_GET_COUNTER(&htim2))
+        {
+            Encoder_Light_Refresh_idx = 1;
+        }
         if( Encoder_Light_count > 60000) 
         {
             Encoder_Light_count = 0;
@@ -973,7 +980,6 @@ void Encoder_Light()
             Encoder_Light_count = 50;
             __HAL_TIM_SET_COUNTER(&htim2 , 50);
         }
-
         __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , Encoder_Light_count);
         __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 50 - Encoder_Light_count);
         __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , Encoder_Light_count);
@@ -989,6 +995,10 @@ void Encoder_Light()
             Encoder_Light_count_bbb = 0;
         }
 
+    if(Encoder_Light_Refresh_idx && tick_elapsed(&Encoder_Light_Refresh_Time, (uint32_t) 24) )
+    {
+        Encoder_Light_Refresh_idx = 0;
+
         OLED_NewFrame();
         OLED_DrawRectangle      (  30 - 24 , 40 , 25 , 10,OLED_COLOR_NORMAL);
         OLED_DrawRectangle      (  30 + 63 , 40 , 25 , 10,OLED_COLOR_NORMAL);
@@ -997,7 +1007,7 @@ void Encoder_Light()
         OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
         
         OLED_ShowFrame();
-
+    }
         if( tick_elapsed(& key_Exittime, (uint32_t) 24) )
         {
             if(EXIT())
@@ -1094,16 +1104,66 @@ void UART_Review ()
 
 //---------------------{二级 三号菜单实现预备}----------------------------------------
 
-void Encoder_1 ()
+void Encoder_Slaver ()
 {
+    int Encoder_Slaver_Count = 0;
+    int Slaver_Place = 0;
+    int Encoder_Slaver_Refresh_idx = 0;
+    uint32_t Encoder_Slaver_Refresh_Time = 0;
+    uint32_t Encoder_Slaver_Time =  0;
+    HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
+    HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);
     OLED_NewFrame();
-    OLED_PrintString(20 , 40 , "To Be Continue..." ,&font16x16 ,OLED_COLOR_NORMAL);
+    OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
     OLED_ShowFrame();
+
+    while(1)
+    {        
+        if( tick_elapsed(& Encoder_Slaver_Time, (uint32_t) 20) )
+        {
+        Encoder_Slaver_Count = __HAL_TIM_GET_COUNTER(&htim2);
+        }
+        if(Encoder_Slaver_Count != __HAL_TIM_GET_COUNTER(&htim2))
+        {
+            Encoder_Slaver_Refresh_idx = 1;
+        }
+        Encoder_Slaver_Count  = __HAL_TIM_GET_COUNTER(&htim2);
+
+        if( Encoder_Slaver_Count > 60000) 
+        {
+            Encoder_Slaver_Count = 0;
+            __HAL_TIM_SET_COUNTER(&htim2 , 0);
+        }
+            if( Encoder_Slaver_Count > 20) 
+        {
+            Encoder_Slaver_Count = 20;
+            __HAL_TIM_SET_COUNTER(&htim2 , 20);
+        }
+
+        Slaver_Place = ((10 * Encoder_Slaver_Count) / (float)20 + 2.5 ) / 100.0 * 2000 ;
+        __HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_1, Slaver_Place);
+
+
+         if(Encoder_Slaver_Refresh_idx && tick_elapsed(&Encoder_Slaver_Refresh_Time, (uint32_t) 24) )
+        {
+        Encoder_Slaver_Refresh_idx = 0;
+
+        OLED_NewFrame();
+        OLED_DrawRectangle      (  30 - 24 , 40 , 25 , 10,OLED_COLOR_NORMAL);
+        OLED_DrawFilledRectangle(  30 - 24 , 40 , Encoder_Slaver_Count * 25.0 / 20 ,10 , OLED_COLOR_NORMAL);
+        OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
+        
+        OLED_ShowFrame();
+        }
+    }
 
 }
 
 
+void ADC ()
+{
 
+}
 
 
 

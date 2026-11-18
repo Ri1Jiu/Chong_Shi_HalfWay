@@ -53,13 +53,13 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : KEY1_Pin KEY2_Pin */
   GPIO_InitStruct.Pin = KEY1_Pin|KEY2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : KEY3_Pin */
   GPIO_InitStruct.Pin = KEY3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(KEY3_GPIO_Port, &GPIO_InitStruct);
 
 }

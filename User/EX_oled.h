@@ -43,7 +43,9 @@ void UART_OLED(void);
 void OLED_UART(void);
 void UART_Review(void);
 //---------------------{一级菜单实现预备}----------------------------------------
-void Encoder_1(void);
+void Encoder_Slaver(void);
+void ADC(void); 
+
 
 //---------------------{一级菜单实现预备}----------------------------------------
 
