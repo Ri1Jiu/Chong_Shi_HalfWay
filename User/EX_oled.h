@@ -1,31 +1,63 @@
 #ifndef __EX_OLED_H
 #define __EX_OLED_H
 
-extern int po = 1;
-extern int i;
-extern int o;
-extern int p;
-extern int j;
-extern int state = 1;    //展示菜单页
-extern int STaTe = 0;    //函数调用
-extern int STATE = 0;    //
-void READPin(int * idx);
-uint8_t tick_elapsed( int* last ,uint32_t period);
-void OLED_PreFrame(void);
-void OLED_Frame_1 (int * i);
-void OLED_Frame_1_1 (int * i);
-void OLED_Frame_1_2 (int * i);
-void OLED_Frame_1_3 (int * i);
-void OLED_Frame_1_4 (int * i);
-void READPinPin(int * idx);
+#include <stdio.h>
+#include <stdint.h>
+
+extern int po;
+extern int i;         //光标位置
+extern int s_DownPage;         //页面下翻指示符
+extern int Li;         //灯泡亮起旋转
+extern uint32_t key_Chosetime;
+extern uint32_t key_Selecttime;
+extern uint32_t key_Exittime;
+extern int s_page;    //展示菜单页   一级菜单
+extern int s_contr;    //函数实现时控制用
+extern int DMA_CH;   //DMA状态
+int  EXIT       (void);
+int  READPin    (void);
+void READPin_1_1(void);
+int  READPinPin (void);
+extern int READPin_PWM(void);
+int  READPinPin_PWM(void);
+
+void READPin_4_1(void);
+void READPinPin_4_1(void);
+//DMA
+extern char UL[10];
+uint8_t tick_elapsed ( uint32_t * last ,uint32_t period);
+void OLED_PreFrame  (void);
+void OLED_Frame_1   (void);
+void OLED_Frame_1_1 (void);
+void OLED_Frame_1_2 (void);
+void OLED_Frame_1_3 (void);
+void OLED_Frame_1_4 (void);
 
 //---------------------{一级菜单实现预备}----------------------------------------
-void PWM_Light(int * jdx);
+void PWM_Light(void);
 void Encoder_Light(void);
 void UART_Light(void);
-void UART_OLED_Transmit(void);
+//---------------------{一级菜单实现预备}----------------------------------------
 
-//tim2 -> PWM_Light
-//TIM3 -> Encoder
+void UART_OLED(void);
+void OLED_UART(void);
+void UART_Review(void);
+//---------------------{一级菜单实现预备}----------------------------------------
+void Encoder_1(void);
+
+//---------------------{一级菜单实现预备}----------------------------------------
+
+void TIM_UP_Count (void); 
+void TIM_DOWN_Count (void); 
+void TIM_Slavor (void); 
+
+
+//TIM2 -> Encoder
+//TIM3 -> PWM_Light
 //TIM4 -> Slavor
-#endif 
+//IIC1 -> OLED
+//IIC2 -> ???
+
+#endif
+
+

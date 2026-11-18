@@ -39,5 +39,7 @@ typedef struct Image {
 } Image;
 
 extern const Image bilibiliImg;
+extern const Image loookImg;
+
 
 #endif // __FONT_H

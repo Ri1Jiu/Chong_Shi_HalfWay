@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -92,6 +93,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM3_Init();
   MX_I2C1_Init();
   MX_USART1_UART_Init();
@@ -127,21 +129,22 @@ int main(void)
   // }
 
     OLED_PreFrame();
-    OLED_Frame_1 (&i);
-    int returnning = 0;
+    OLED_Frame_1 ();
+    // uint32_t returnning = 0;
     // int* i1 = &i;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   { 
-
-    if(tick_elapsed (&returnning , 20))
-    {
-    READPin(&i);
-    READPinPin(&i);
-    }
+    // 🤣🤣🤣
+    // if(tick_elapsed (&returnning , (uint32_t)20))
+    // {
+    // READPin();
+    // READPinPin();
+    // }
     
     
     // HAL_GPIO_WritePin(KEY1_GPIO_Port,KEY1_Pin,1);
