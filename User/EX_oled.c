@@ -1,4 +1,4 @@
-#include "EX_oled.h"
+﻿#include "EX_oled.h"
 #include "oled.h"
 #include "main.h"
 #include "adc.h"
@@ -14,6 +14,7 @@
     uint32_t key_Chosetime  = 0;
     uint32_t key_Selecttime = 0;
     uint32_t key_Exittime   = 0;
+    uint32_t YEYE_Show_Frame= 0;
     int s_page = 0;
     int s_contr = 0;
     int DMA_CH = 0; 
@@ -28,9 +29,9 @@
 //---------------------{一级菜单(函数) }---------------------------------
 
 FUN Light[3] = { PWM_Light , Encoder_Light ,UART_Light};
-FUN UART[3] = { UART_OLED , OLED_UART , UART_Review };
+FUN UART[4] = { UART_OLED , OLED_UART , UART_Review , UART_Slaver};
 FUN Encoder[2] = { Encoder_Slaver ,ADC };
-FUN TIM[3] = { TIM_UP_Count , TIM_DOWN_Count , TIM_Slavor };
+FUN TIM[3] = { TIM_UP_Count , TIM_DOWN_Count , TIM_MPU };
 FUN * function[4] = { Light, UART ,Encoder , TIM };
 
 //---------------------{ALL级菜单 按键}----------------------------------
@@ -100,19 +101,19 @@ uint32_t doen_count = 0;
 int READPin_PWM()
 {
     
-    if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+    if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
     {
         HAL_Delay(30);
-         if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) && !HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+         if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) && HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
          {
             s_PWM = 3;
             
          }
-         else if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+         else if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
          { 
             doen_count = HAL_GetTick();
-            while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
-            if(HAL_GetTick() - doen_count <= 100)
+            while(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
+            if(HAL_GetTick() - doen_count <= 200)
             {
                 s_PWM = 1;
             }
@@ -128,73 +129,81 @@ int READPin_PWM()
 
 int  READPinPin_PWM()
 {
-    if(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+    if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
     {
         HAL_Delay(20);
-         if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) && !HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+         if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) && HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
          {
             s_PWM = 3;
             
          }
-         else if(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
+         else if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
          {
             s_PWM = 4;
          }
-        while(!HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin)){}
+        while(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin)){}
         return 1 ;
     }
         return 0 ;
 }
 
-//---------------------{二级菜单实现 ( 4_1 ) }---------------------------------
+//---------------------{二级菜单实现 ( 2_1 ) }---------------------------------
 static int message_num = 0;
 static char RX_buff[18] = "";
 static char message[10][18] = {
     "",
     "",
 };
+
+//---------------------{二级菜单实现 ( 4_1 ) }---------------------------------
+
     // static uint32_t Chose = 0;
-    static uint32_t time_UP_count = 0;
-    static uint32_t second = 0;
-    static uint32_t min = 0;
-    static uint32_t hour = 0;
-    static uint8_t tim_reverse = 1;
+    // static uint32_t time_UP_count = 0;
+    static uint32_t U_second = 0;
+    static uint32_t U_min = 0;
+    static uint32_t U_hour = 0;
+    static uint32_t D_second = 0;
+    static uint32_t D_min = 0;
+    static uint32_t D_hour = 0;
 
-    int arr_tim = 0;
-    static uint32_t * arr_TIM[3] = {&hour , &min , &second};
+    static uint8_t TIM_Count_Finish = 0;
+    static uint8_t TIM_DOWN_Count_Start = 0;
+    static uint8_t TIM_UP_Count_Start = 0;
+    uint32_t TIM_Count_Arr_Place = 0;
+    static uint32_t * TIM_UP_Count_Arr[3] = {&U_hour , &U_min , &U_second};
+    static uint32_t * TIM_DOWN_Count_Arr[3] = {&D_hour , &D_min , &D_second};
 
-void READPin_4_1()             //非选择，是定时用，不改了
+int READPin_TIM_Count()             //非选择，是定时用，不改了
 {
-    // static uint32_t * arr_TIM[4] = {&hour , &min , &second};
     
-    if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+    if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
     {
         HAL_Delay(30);
-         if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+         if(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
          {
-            (*arr_TIM[arr_tim] )++;
          }
-         while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
+         while(HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
+         return 1 ;
     }
+    return 0 ;
 
 }
-void READPinPin_4_1()
+
+
+int READPinPin_TIM_Count()
 {
     
-    if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+    if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
     {
         HAL_Delay(30);
-         if(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin))
+         if(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin))
          {
-            arr_tim = (arr_tim + 1) % 3;
 
          }
-         while(!HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin)){}
-         TIM_UP_Count();
+         while(HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin)){}
+         return 1 ;
     }
-
-
-    i = 0;
+    return 0 ;
 }
 
 
@@ -258,7 +267,16 @@ uint8_t tick_elapsed( uint32_t* last ,uint32_t period)
     return 0;
 }
 
-
+uint8_t tick_elapsed_UnCompose( uint32_t* last ,uint32_t period)
+{
+    uint32_t now = HAL_GetTick();
+    if(( now - *last ) >= period)
+    {
+        *last = *last + period; 
+        return 1;
+    }
+    return 0;
+}
 //开机动画
 void OLED_PreFrame(void)
 {
@@ -319,6 +337,7 @@ char menu1_2[4][20] =
     "UART_OLED",
     "OLED_UART",
     "UART_Review",
+    "UART_Slaver",
 };
 //---------------------{二级 三号 菜单    数组}----------------------------------
 //二级 三号 菜单设置的数组
@@ -333,6 +352,7 @@ char menu1_4[4][20] =
 {
     "TIM_UP_Count",
     "TIM_DOWN_Count",
+    "TIM_MPU",
 };
 
 
@@ -343,6 +363,25 @@ void OLED_Frame_1 ()
 {
     s_page = 0;
 
+
+
+        key_Chosetime  = 0;
+        key_Selecttime = 0;
+        key_Exittime   = 0;
+    while(1)                 //选择
+    {
+
+        if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+        {
+            if(READPin())
+            {
+            i++;       //
+            continue;
+            }
+        }
+
+if( tick_elapsed(&YEYE_Show_Frame , (uint32_t) 20) )
+{
     OLED_NewFrame();
 
     i %= 4;
@@ -357,21 +396,8 @@ void OLED_Frame_1 ()
     OLED_PrintString(4 , 48, menu1[3] , &font16x16, OLED_COLOR_NORMAL);
     OLED_DrawRoundRectangle(4 - 1, height, strlen(menu1[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
     OLED_ShowFrame();
+}
 
-        key_Chosetime  = 0;
-        key_Selecttime = 0;
-        key_Exittime   = 0;
-    while(1)                 //选择
-    {
-
-        if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
-        {
-            if(READPin())
-            {
-            i++;       //
-            Frame[s_page]();
-            }
-        }
 
         // if(to_exit == 1)
         // {
@@ -388,7 +414,7 @@ void OLED_Frame_1 ()
                 {
                 s_page = i + 1;
                 i = 0;
-                Frame[s_page]();
+                continue;
                 }
                 // if(to_exit)
                 // {
@@ -396,6 +422,11 @@ void OLED_Frame_1 ()
                 // }
             }
 
+        }
+
+        if(s_page != 0)
+        {
+           Frame[s_page](); 
         }
 
         if( tick_elapsed(&key_Exittime , (uint32_t) 20) )
@@ -420,15 +451,7 @@ void OLED_Frame_1_1 ()
 {
     s_page = 1;
 
-    OLED_NewFrame();
 
-    i %= 3;
-    OLED_PrintString(4 , 0 , menu1_1[0] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 16, menu1_1[1] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 32, menu1_1[2] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_DrawRoundRectangle(4 - 1, i * 16 , strlen(menu1_1[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
-
-    OLED_ShowFrame();
 
     key_Chosetime  = 0;
     key_Selecttime = 0;
@@ -441,15 +464,29 @@ void OLED_Frame_1_1 ()
             if(READPin())
             {
                 i++;       //
-                Frame[s_page]();
+                continue;
             }
         }
+
+    OLED_NewFrame();
+
+if( tick_elapsed(&YEYE_Show_Frame , (uint32_t) 20) )
+{
+    i %= 3;
+    OLED_PrintString(4 , 0 , menu1_1[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16, menu1_1[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 32, menu1_1[2] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, i * 16 , strlen(menu1_1[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
 
         if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
         {
             if(READPinPin())
             {
                 function[0][i]();
+                continue;
                 //i = 0;     已有
             }
         }
@@ -460,7 +497,7 @@ void OLED_Frame_1_1 ()
             {
                 i = 0;
                 s_page = 0;
-                Frame[s_page]();
+                return;
             }
 
         }
@@ -473,14 +510,7 @@ void OLED_Frame_1_2 ()
 {
     s_page = 2;
     
-    OLED_NewFrame();
-    i %= 3;
-    OLED_PrintString(4 , 0 , menu1_2[0] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 16,  menu1_2[1] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 32,  menu1_2[2] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_DrawRoundRectangle(4 - 1, i * 16 , strlen(menu1_2[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
 
-    OLED_ShowFrame();
 
     key_Chosetime  = 0;
     key_Selecttime = 0;
@@ -493,18 +523,34 @@ void OLED_Frame_1_2 ()
             if(READPin())
             {
                 i++;       //
-                Frame[s_page]();
+                continue;
             }
         }
+if( tick_elapsed(&YEYE_Show_Frame , (uint32_t) 20) )
+{
+    OLED_NewFrame();
 
+    i %= 4;
+    int height = i * 16;
+    if(i == 3)           //最后一行靠下，看不到边框
+    {
+        height -= 2;
+    }
+    OLED_PrintString(4 , 0 , menu1_2[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_2[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 32,  menu1_2[2] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 48,  menu1_2[3] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, i * 16 , strlen(menu1_2[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
         if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
         {
             if(READPinPin())
-            {
-                i = 0;                
+            {             
                 function[1][i]();
-
                 //i = 0;     已有
+                continue;
             }
         }
 
@@ -514,7 +560,7 @@ void OLED_Frame_1_2 ()
             {
                 i = 1;
                 s_page = 0;
-                Frame[s_page]();
+                return;
             }
 
         }
@@ -527,14 +573,7 @@ void OLED_Frame_1_3 ()
 {
     s_page = 3;
 
-    OLED_NewFrame();
-    i %= 1;
-    OLED_PrintString(4 , 0 , menu1_3[0] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 16,  menu1_3[1] , &font16x16, OLED_COLOR_NORMAL);
 
-    OLED_DrawRoundRectangle(4 - 1, i * 16, strlen(menu1_3[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
-
-    OLED_ShowFrame();
 
     key_Chosetime  = 0;
     key_Selecttime = 0;
@@ -547,15 +586,25 @@ void OLED_Frame_1_3 ()
             if(READPin())
             {
                 i++;       //
-                Frame[s_page]();
             }
         }
+
+if( tick_elapsed(&YEYE_Show_Frame , (uint32_t) 20) )
+{
+    OLED_NewFrame();
+    i %= 2;
+    OLED_PrintString(4 , 0 , menu1_3[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_3[1] , &font16x16, OLED_COLOR_NORMAL);
+
+    OLED_DrawRoundRectangle(4 - 1, i * 16, strlen(menu1_3[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
 
         if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
         {
             if(READPinPin())
-            {
-                i = 0;                
+            {              
                 function[2][i]();
 
                 //i = 0;     已有
@@ -568,7 +617,7 @@ void OLED_Frame_1_3 ()
             {
                 i = 2;
                 s_page = 0;
-                Frame[s_page]();
+                return ;
             }
 
         }
@@ -581,13 +630,7 @@ void OLED_Frame_1_4 ()
 {
     s_page = 4;
 
-    OLED_NewFrame();
-    i %= 2;
-    OLED_PrintString(4 , 0 , menu1_4[0] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_PrintString(4 , 16,  menu1_4[1] , &font16x16, OLED_COLOR_NORMAL);
-    OLED_DrawRoundRectangle(4 - 1, i * 16, strlen(menu1_4[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
 
-    OLED_ShowFrame();
 
     key_Chosetime  = 0;
     key_Selecttime = 0;
@@ -600,17 +643,29 @@ void OLED_Frame_1_4 ()
             if(READPin())
             {
                 i++;       //
-                Frame[s_page]();
+                continue;
             }
         }
+
+if( tick_elapsed(&YEYE_Show_Frame , (uint32_t) 20) )
+{
+    OLED_NewFrame();
+    i %= 2;
+    OLED_PrintString(4 , 0 , menu1_4[0] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 16,  menu1_4[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_PrintString(4 , 32,  menu1_4[1] , &font16x16, OLED_COLOR_NORMAL);
+    OLED_DrawRoundRectangle(4 - 1, i * 16, strlen(menu1_4[i]) * 8 + 1 , 18 ,3, OLED_COLOR_NORMAL);
+
+    OLED_ShowFrame();
+}
 
         if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
         {
             if(READPinPin())
             {
-                i = 0;
                 function[3][i]();
                 //i = 0;     已有
+                continue;
             }
         }
 
@@ -620,7 +675,7 @@ void OLED_Frame_1_4 ()
             {
                 i = 3;
                 s_page = 0;
-                Frame[s_page]();
+                return;
             }
 
         }
@@ -642,7 +697,7 @@ int s2_idx_place = 0;
 int  *s_LED[3] = { &s_LED_0,&s_LED_1, &s_LED_2};
 void PWM_Light()
 {
-        uint32_t PWM_Light_Lig = 50;
+        uint32_t PWM_Light_Ligth = 50;
         uint32_t PWM_Light_Time = 0;
         uint8_t PWM_Light_Choose = 0;
         int PWM_Light_state = 0;
@@ -660,16 +715,16 @@ void PWM_Light()
     while(1)
     {
         if(PWM_Light_state == 0  && tick_elapsed(&PWM_Light_Time , 10))
-        { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
+        { PWM_Light_Ligth --;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
         else if( PWM_Light_state == 1 && tick_elapsed(&PWM_Light_Time , 10))
-        { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
+        { PWM_Light_Ligth++ ;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 50){ PWM_Light_state = 0;}
         }
         
 
@@ -695,7 +750,7 @@ void PWM_Light()
         {
             if(EXIT())
             {   
-                Frame[s_page]();
+                return ;
             }
         }
     }
@@ -704,7 +759,7 @@ void PWM_Light()
     while(1)
     {
 
-        if(s_PWM == 1)
+if(s_PWM == 1)
         {
             s1_place = (s1_place + 1) % 3;
             *s_LED[s1_place]  = (*s_LED[s1_place] + 1) % 2;
@@ -726,16 +781,16 @@ void PWM_Light()
             while(1)
             {
         if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
-        { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
+        { PWM_Light_Ligth --;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
         else if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 1)
-        { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
+        { PWM_Light_Ligth++ ;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 50){ PWM_Light_state = 0;}
         }
 
 
@@ -763,10 +818,11 @@ void PWM_Light()
                 Frame[s_page]();
             }
         }
+
             }
         }
 
-        if(s_PWM == 4)
+if(s_PWM == 4)
         {
             s2_place -= 1;
             s2_idx_place = (s2_place ) % 3;
@@ -788,16 +844,16 @@ void PWM_Light()
             while(1)
             {
         if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 0)
-        { PWM_Light_Lig --;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 0){ PWM_Light_state = 1;}
+        { PWM_Light_Ligth --;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 0){ PWM_Light_state = 1;}
         }
         // __HAL_TIM_SET_COMPARE(&htim3, TIM[j],0);
 
         else if( tick_elapsed(&PWM_Light_Time , 10) && PWM_Light_state == 1)
-        { PWM_Light_Lig++ ;
-          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Lig);
-          if(PWM_Light_Lig == 50){ PWM_Light_state = 0;}
+        { PWM_Light_Ligth++ ;
+          __HAL_TIM_SET_COMPARE(&htim3, PWM_Light_CH[PWM_Light_Choose], PWM_Light_Ligth);
+          if(PWM_Light_Ligth == 50){ PWM_Light_state = 0;}
         }
 
         
@@ -822,39 +878,49 @@ void PWM_Light()
         {
             if(EXIT())
             {   
-                Frame[s_page]();
+                return;
             }
         }
             }
         }
 
-        if(s_PWM == 2)
+if(s_PWM == 2)
         {
             // int  PWM_Light_count = 0;
             s_PWM = 0;
+            int lalssladl = 0;
+            uint32_t left_long_Time = 0;
+    HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
+
             while(1)
-            {int lalssladl = 0;
-                if(lalssladl == 1)
+            {
+            if( tick_elapsed(&left_long_Time , (uint32_t) 700) )
+            {
+                lalssladl = (lalssladl + 1) % 3;
+                if(lalssladl == 0)
                 {
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 35);
             __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 0);
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 35);
                 }
-                                if(lalssladl == 1)
-                {
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 0);
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 90);
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 90);
-                }
-                
                 else if(lalssladl == 1)
                 {
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 90);
-            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 90);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 0);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 35);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 35);
+                }
+                
+                else if(lalssladl == 2)
+                {
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_1 , 35);
+            __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_2 , 35);
             __HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 , 0);
                 }
-
-                if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+            }
+        
+            if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
         {
             if(READPin_PWM())
             {
@@ -875,14 +941,17 @@ void PWM_Light()
         {
             if(EXIT())
             {   
-                Frame[s_page]();
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+                return;
             }
         }
             }
 
         }
 
-        if(s_PWM == 3)
+if(s_PWM == 3)
         {
 
             // int  PWM_Light_count = 0;
@@ -921,7 +990,7 @@ void PWM_Light()
         {
             if(EXIT())
             {   
-                Frame[s_page]();
+                return;
             }
         }
             }
@@ -931,7 +1000,7 @@ void PWM_Light()
         {
             if(EXIT())
             {
-            Frame[s_page]();
+            return;
             }
         }
 
@@ -944,7 +1013,7 @@ void Encoder_Light()
     uint32_t Encoder_Light_count_aaa = 0;
     uint32_t Encoder_Light_count_bbb = 0;
     uint32_t Encoder_Light_Time = 0;
-    uint32_t Encoder_Light_Refresh_idx = 0;
+    // uint32_t Encoder_Light_Refresh_idx = 0;
     uint32_t Encoder_Light_Refresh_Time = 0;
     key_Exittime = 0;
     HAL_TIM_Encoder_Start(&htim2,TIM_CHANNEL_ALL);
@@ -966,10 +1035,7 @@ void Encoder_Light()
         if( tick_elapsed(& Encoder_Light_Time, (uint32_t) 20) )
         {
         Encoder_Light_count = __HAL_TIM_GET_COUNTER(&htim2);
-        if(Encoder_Light_count != __HAL_TIM_GET_COUNTER(&htim2))
-        {
-            Encoder_Light_Refresh_idx = 1;
-        }
+
         if( Encoder_Light_count > 60000) 
         {
             Encoder_Light_count = 0;
@@ -995,9 +1061,9 @@ void Encoder_Light()
             Encoder_Light_count_bbb = 0;
         }
 
-    if(Encoder_Light_Refresh_idx && tick_elapsed(&Encoder_Light_Refresh_Time, (uint32_t) 24) )
+    if( tick_elapsed(&Encoder_Light_Refresh_Time, (uint32_t) 24) )
     {
-        Encoder_Light_Refresh_idx = 0;
+
 
         OLED_NewFrame();
         OLED_DrawRectangle      (  30 - 24 , 40 , 25 , 10,OLED_COLOR_NORMAL);
@@ -1012,7 +1078,7 @@ void Encoder_Light()
         {
             if(EXIT())
             {
-            Frame[s_page]();
+            return;
             }
         }   
     }
@@ -1085,22 +1151,25 @@ void UART_Review ()
     //     {
 
     //     }
-
-
-
     // }
 
-
-
 }
-
-
         //     if( DMA_CH == 3)
         //     {
         //         UART_OLED();
         //     }
         //  }
 
+void UART_Slaver()
+{
+
+
+
+
+
+
+}
+//上位机设定一路 PWM 的频率、占空比、占空比变化速率，并实现舵机角度的变化
 
 //---------------------{二级 三号菜单实现预备}----------------------------------------
 
@@ -1150,7 +1219,7 @@ void Encoder_Slaver ()
 
         OLED_NewFrame();
         OLED_DrawRectangle      (  30 - 24 , 40 , 25 , 10,OLED_COLOR_NORMAL);
-        OLED_DrawFilledRectangle(  30 - 24 , 40 , Encoder_Slaver_Count * 25.0 / 20 ,10 , OLED_COLOR_NORMAL);
+        OLED_DrawFilledRectangle(  30 - 24 , 40 , Encoder_Slaver_Count * 25.0 / 25 ,10 , OLED_COLOR_NORMAL);
         OLED_DrawImage( 30 , 0 ,&loookImg ,OLED_COLOR_NORMAL);
         
         OLED_ShowFrame();
@@ -1173,102 +1242,240 @@ void ADC ()
 
 void TIM_UP_Count ()
 {
-    static uint32_t Chose = 0;
-    time_UP_count = 0;
+    uint32_t TIM_UP_Count_Time = 0;
     // static uint32_t day = 0;
     char message[20] = ""; 
- while(1)
- {
-    if(tick_elapsed(&Chose , (uint32_t)20))
+    // uint32_t TIM_UP_Count_GO = 0;
+    // static uint8_t TIM_Count_reverse = 1;
+
+    key_Chosetime = 0;
+    key_Exittime = 0;
+    key_Selecttime = 0;
+    static int TIM_UP_Count_State = 0;
+    if(!TIM_UP_Count_State)
     {
-        READPin_4_1();
+            OLED_NewFrame();
+            OLED_PrintString(0 , 32  , "按下按键开始计数" ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_ShowFrame();
     }
-
-    if(tick_elapsed(&time_UP_count , (uint32_t)1000))
+    else{
+            OLED_NewFrame();
+            sprintf(message , "%02u时%02u分%02u秒" ,*TIM_UP_Count_Arr[0],*TIM_UP_Count_Arr[1],*TIM_UP_Count_Arr[2] );
+            OLED_PrintString(3 , 16  , message ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_PrintString(3 , 32  , "按下按键继续计时" ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_ShowFrame();
+    }
+    while(1)
     {
-        second ++;
-        tim_reverse ++;
+        if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+        {
+            if(READPin())
+            {
+                TIM_UP_Count_Start = (TIM_UP_Count_Start + 1) % 2;
+            }
+        }
 
-        sprintf(message , "时%02u分%02u秒%02u" ,hour, min ,second  );
+        if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
+        {
+            if(READPinPin())
+            {
+                TIM_UP_Count_Start = (TIM_UP_Count_Start + 1) % 2;
+            }
+        }
+        if( tick_elapsed(&key_Exittime , (uint32_t) 20) )
+        {
+            if(EXIT())
+            {
+                break;
+            }
+        }
+        if(!TIM_UP_Count_Start)
+        {
+            TIM_UP_Count_Time = HAL_GetTick();
+        }
+
+        if(TIM_UP_Count_Start && tick_elapsed_UnCompose(&TIM_UP_Count_Time , (uint32_t)1000))
+        {//要可保存
+    // static uint32_t * TIM_UP_Count_Arr[3] = {&U_hour , &U_min , &U_second};
+
+           ( *TIM_UP_Count_Arr[2])++;
+            // TIM_Count_reverse = (TIM_Count_reverse + 1) % 2;
+
+        
+        sprintf(message , "%02u时%02u分%02u秒" ,*TIM_UP_Count_Arr[0],*TIM_UP_Count_Arr[1],*TIM_UP_Count_Arr[2] );
         OLED_NewFrame();
 
         OLED_PrintString(3 , 32  , message ,&font16x16 , OLED_COLOR_NORMAL);
-        OLED_DrawLine(3 + 16 * ((tim_reverse % 2) + 1), 32 , 3 + 16 * ((tim_reverse % 2) + 1) , 32 ,OLED_COLOR_NORMAL);
+        // if(TIM_Count_reverse)
+        // {
+        // // OLED_DrawLine(3 + (32) * TIM_Count_Arr_Place, 32 + 17 , 3 + 16 + 32 * (TIM_Count_Arr_Place) , 32 + 17 ,OLED_COLOR_NORMAL);
+        // }
         // OLED_DrawLine(3 + 16, 32 , 3 + 32 - 1, 32 ,OLED_COLOR_NORMAL);
         // OLED_DrawLine(3 + 32, 32 , 3 + 48 - 1, 32 ,OLED_COLOR_NORMAL);
+
         OLED_ShowFrame();
-
-        if( second == 60)  {min += 1;second = 0;}
-        if( min == 60)     {hour += 1; min = 0;}
+        if( *TIM_UP_Count_Arr[2] == 60)  {*TIM_UP_Count_Arr[1] += 1 ;*TIM_UP_Count_Arr[2] = 0;}
+        if( *TIM_UP_Count_Arr[1] == 60)  {*TIM_UP_Count_Arr[0] += 1 ;*TIM_UP_Count_Arr[1] = 0;}
+        TIM_UP_Count_State = 1;
+        // if( second == 60)  {min += 1;second = 0;}
+        // if( min == 60)     {hour += 1; min = 0;}
         // if( hour == 24)    {day += 1; hour = 0;}
+        }
+    
     }
- }
 }
-
 
 void TIM_DOWN_Count ()
 {
-    static uint32_t Chose = 0;
+    // static uint32_t Chose = 0;
     static uint32_t time_DOWN_count = 0;
-    second = 0;
-    min = 0;
-    hour = 0;
+    static uint8_t TIM_Count_reverse = 1;
+     TIM_Count_Finish = 0;
+     int TIM_Count_OVER = 0;
+    TIM_Count_Arr_Place = 0;
     char message[20] = ""; 
-    char mess[10] = "TIMES UP";
+
+    static int TIM_DOWN_Count_State;
+    if(!TIM_DOWN_Count_State)
+    {
+            OLED_NewFrame();
+            sprintf(message , "%02u时%02u分%02u秒" ,*TIM_DOWN_Count_Arr[0],*TIM_DOWN_Count_Arr[1],*TIM_DOWN_Count_Arr[2] );
+            OLED_PrintString(3 , 16  , message ,&font16x16 , OLED_COLOR_NORMAL);            
+            OLED_PrintString(0 , 32  , "按下按键设置倒数" ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_ShowFrame();
+    }
+    else
+    {
+            OLED_NewFrame();
+            sprintf(message , "%02u时%02u分%02u秒" ,*TIM_DOWN_Count_Arr[0],*TIM_DOWN_Count_Arr[1],*TIM_DOWN_Count_Arr[2] );
+            OLED_PrintString(3 , 16  , message ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_PrintString(3 , 32  , "按下按键继续计时" ,&font16x16 , OLED_COLOR_NORMAL);
+            OLED_ShowFrame();
+    }
+
 
     while(1)
     {
+        if( tick_elapsed(&key_Chosetime , (uint32_t) 20) )
+        {
+            if(READPin())
+            {if(!TIM_Count_Finish)
+                {
+            (*TIM_DOWN_Count_Arr[ TIM_Count_Arr_Place] )++;
+                }
+             if(TIM_Count_Finish)
+             {
+                TIM_DOWN_Count_Start = (TIM_DOWN_Count_Start + 1) % 2;
+
+             }
+            }
+        }
+        if( tick_elapsed(&key_Selecttime , (uint32_t) 20) )
+        {
+            if(READPinPin_TIM_Count())
+            {
+            if(TIM_Count_Arr_Place < 3)
+            {
+                TIM_Count_Arr_Place++;
+            }
+            else if(TIM_Count_Arr_Place == 3)
+            {
+                TIM_Count_Arr_Place = (TIM_Count_Arr_Place + 1) % 3;
+                if (TIM_Count_Arr_Place == 0)
+                {
+                TIM_Count_Finish = 1;
+                TIM_DOWN_Count_Start = (TIM_DOWN_Count_Start + 1) % 2;
+                }
+            }
+            }
+        }
+        if( tick_elapsed(&key_Exittime , (uint32_t) 20) )
+        {
+            if(EXIT())
+            {
+                break;
+            }
+        }
 
 
-
-    if(tick_elapsed(&Chose , 20))
+        // if(tick_elapsed(&Chose , 20))
+        // {
+        //     // ReadPin_4_1();
+        // }
+    if(!TIM_DOWN_Count_Start)
     {
-        // ReadPin_4_1();
+        time_DOWN_count = HAL_GetTick();
+        OLED_NewFrame();
+        TIM_Count_reverse = (TIM_Count_reverse + 1) % 2;
+        if(!TIM_DOWN_Count_Start)//编写时闪灭
+        {
+        sprintf(message , "%02u时%02u分%02u秒" ,*TIM_DOWN_Count_Arr[0], *TIM_DOWN_Count_Arr[1] ,*TIM_DOWN_Count_Arr[2] );
+        OLED_PrintString(3 , 16, message ,&font16x16 , OLED_COLOR_NORMAL);
+            if(TIM_Count_reverse)
+            {
+
+            if(TIM_Count_Arr_Place == 0)
+            {OLED_DrawLine(3     , 32 + 1 , 3 + 16 - 1, 32 + 1 ,OLED_COLOR_NORMAL);}
+            else if(TIM_Count_Arr_Place == 1)
+            {OLED_DrawLine(3 + 16, 32 + 1 , 3 + 32 - 1, 32 + 1 ,OLED_COLOR_NORMAL);}
+            else if(TIM_Count_Arr_Place == 2)
+            {OLED_DrawLine(3 + 32, 32 + 1 , 3 + 48 - 1, 32 + 1 ,OLED_COLOR_NORMAL);}
+            }
+        }
+        OLED_ShowFrame();
     }
 
-    if(tick_elapsed(&time_DOWN_count , 1000))
+    if(!TIM_Count_OVER && tick_elapsed_UnCompose(&time_DOWN_count , 1000))
     {
-
-        sprintf(message , "时%02u分%02u秒%02u" ,hour, min ,second  );
+        TIM_DOWN_Count_State = 1;
+        sprintf(message , "%02u时%02u分%02u秒" ,*TIM_DOWN_Count_Arr[0], *TIM_DOWN_Count_Arr[1] ,*TIM_DOWN_Count_Arr[2] );
         OLED_NewFrame();
 
         OLED_PrintString(3 , 16, message ,&font16x16 , OLED_COLOR_NORMAL);
-        OLED_DrawLine(3     , 32 , 3 + 16 - 1, 32 ,OLED_COLOR_NORMAL);
-        OLED_DrawLine(3 + 16, 32 , 3 + 32 - 1, 32 ,OLED_COLOR_NORMAL);
-        OLED_DrawLine(3 + 32, 32 , 3 + 48 - 1, 32 ,OLED_COLOR_NORMAL);
+        OLED_ShowFrame();
 
-        if (second > 0) second --;
-        if(second == 0 || second > 100)
+
+        if (*TIM_DOWN_Count_Arr[2] > 0) {*(TIM_DOWN_Count_Arr[2] )--;}
+        if(*TIM_DOWN_Count_Arr[2] == 0 || *TIM_DOWN_Count_Arr[2] > 100)//计数的计算
         {
-            if(min != 0)
+            if(*TIM_DOWN_Count_Arr[1] != 0)
             {
-                min --;
-                second = 60;
+                *TIM_DOWN_Count_Arr[1] --;
+                *TIM_DOWN_Count_Arr[2] = 60;
             }
-            else if(min == 0)
+            else if(*TIM_DOWN_Count_Arr[1] == 0)
             {
-                if(hour != 0)
+                if(*TIM_DOWN_Count_Arr[0] != 0)
                 {
-                    hour --;
-                    min = 60;
+                    *TIM_DOWN_Count_Arr[0] --;
+                    *TIM_DOWN_Count_Arr[1] = 60;
                 }
-                else if(hour == 0)
+                else if(*TIM_DOWN_Count_Arr[0] == 0)
                 {
-                    OLED_NewFrame();
-                    OLED_PrintString(3 ,48 ,mess ,&font16x16 ,OLED_COLOR_NORMAL);
+                    TIM_Count_OVER = 1;
+                    
+                    
+                    //可以加个闪烁
                 }
             }
         }
     }
+        if(TIM_Count_OVER)
+        {
+            OLED_NewFrame();
+
+            char mess[30] = "//TIMES OUT //";
+            OLED_PrintString(4 ,48 ,mess ,&font16x16 ,OLED_COLOR_NORMAL);
+            OLED_ShowFrame();
+        }
     
-    OLED_ShowFrame();
 
     }
 }
 
 
-void TIM_Slavor ()
-{//上位机设定一路 PWM 的频率、占空比、占空比变化速率，并实现舵机角度的变化
+void TIM_MPU ()
+{
 
 
 
